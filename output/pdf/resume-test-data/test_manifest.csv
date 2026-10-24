@@ -1,0 +1,7 @@
+﻿file,candidate,expected_result
+01_lin_yue_high_fit.pdf,林悦,高匹配（建议进入面试）
+02_zhou_kai_good_fit.pdf,周凯,较高匹配（建议面试，重点验证 0-1 与商业化能力）
+03_chen_min_medium_fit.pdf,陈敏,中等匹配（产品与数据能力强，企业 AI 经验不足）
+04_zhao_qing_potential_fit.pdf,赵晴,潜力型（年限和独立负责经验不足）
+05_wang_hao_low_medium_fit.pdf,王浩,偏低匹配（交付能力强，但不是 AI 产品负责人）
+06_sun_ning_low_fit.pdf,孙宁,低匹配（缺少产品与 AI 相关经验）

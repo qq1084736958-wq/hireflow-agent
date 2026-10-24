@@ -1,0 +1,37 @@
+# Next.js
+.next/
+out/
+
+# 依赖
+node_modules/
+
+# 环境变量（保留示例文件）
+.env*
+!.env.example
+
+# 测试覆盖率
+coverage/
+
+# 运行日志
+*.log
+
+# 本地数据库
+data/*.db
+data/*.db-*
+
+# TypeScript 增量构建缓存
+tsconfig.tsbuildinfo
+
+# 临时文件（PDF截图、处理中间文件）
+tmp/
+
+# 评估运行输出（JSON/CSV原始数据）
+output/evaluation/*.json
+output/evaluation/*.csv
+
+# 测试简历（敏感/无意义）
+test-resume.pdf
+
+# OS 文件
+.DS_Store
+Thumbs.db
