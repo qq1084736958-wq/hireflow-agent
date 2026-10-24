@@ -1,25 +1,57 @@
 # HireFlow Agent
 
-证据驱动的招聘决策工作台。当前版本是一条可交互的作品集演示链路，覆盖岗位要求、候选人匹配、定制面试和报告输出。
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## 本地运行
+**证据驱动的 AI 招聘决策工作台。**
+
+将 JD 和简历交给 6 个职责单一的 Agent 串联处理：JD 结构化 → 简历解析 → 逐项证据匹配 → 定制面试题 → 面试报告。每个评分背后都有简历原文引用；系统永远不自动录用或淘汰候选人。
+
+> 📁 **[设计文档中心 →](docs/README.md)**  完整 PRD · 多 Agent 架构 · Prompt 工程 · 评测 Harness
+
+---
+
+## 架构概览
+
+```
+JD 文本 ──→ [JD 解析 Agent] ──→ 岗位能力模型（5-10项 + 权重）
+                                        ↓
+简历 PDF ──→ 隐私脱敏 ──→ [简历解析 Agent] ──→ 结构化 Profile
+                                        ↓
+                          [证据匹配 Agent] ──→ 逐项分数 + 原文引用
+                                        ↓
+                       应用层加权计算总分 + 风险保护规则
+                                        ↓
+                          [面试题生成 Agent] ──→ 6 道结构化面试题
+                                        ↓
+                          [面试评估 Agent] ──→ STAR 评分 + 推进建议
+```
+
+**设计亮点：**
+- 总分由应用层代码计算（非 AI 直接给结论），HR 调整权重无需重跑 Agent
+- `evidenceQuote` 必须可在简历原文中直接搜索到；无证据时为空字符串，不允许模型杜撰
+- 30 条离线评测用例（常规 + 边界 + 公平性反事实），引用定位率 95.7%，无证据高分率 0%
+
+---
+
+## 快速启动
 
 ```bash
 npm install
 npm run dev
 ```
 
-访问 `http://localhost:3000`。点击“运行完整样例”使用稳定演示数据；点击“创建职位”进入真实 Agent 链路。
+访问 `http://localhost:3000`。
 
-## 配置真实模型
+- 点击**「运行完整样例」**：使用预计算演示数据，无需 API Key，立即可用
+- 点击**「创建职位」**：进入真实 Agent 链路，需配置 API Key（见下）
 
-真实链路默认使用 DeepSeek 的 OpenAI-compatible Chat Completions 接口。复制配置文件：
+### 配置真实模型
 
 ```bash
-copy .env.example .env.local
+cp .env.example .env.local
 ```
-
-填写：
 
 ```env
 DEEPSEEK_API_KEY=your-deepseek-key
@@ -27,40 +59,47 @@ AI_BASE_URL=https://api.deepseek.com
 AI_MODEL=deepseek-v4-flash
 ```
 
-修改环境变量后需要重启开发服务。密钥只在服务端读取，不会发送到浏览器。若需要更高质量，可将模型改为 `deepseek-v4-pro`。
+`AI_BASE_URL` 可替换为企业内部 OpenAI-compatible API 网关或私有模型地址。
 
-`AI_BASE_URL` 可替换为企业内部 OpenAI-compatible API 网关或私有模型地址。默认配置连接 DeepSeek 公网 API；这不等同于私有化部署。
+---
+
+## 设计文档
+
+| 文档 | 内容 |
+|---|---|
+| [📋 产品需求文档（PRD）](docs/prd/hireflow-v1-prd.md) | 问题定义、功能需求、成功指标、迭代路线 |
+| [🏗️ 多 Agent 架构](docs/agent-design/multi-agent-architecture.md) | 6 个 Agent 的职责划分、编排模式、架构决策（ADR） |
+| [✍️ Prompt 工程设计](docs/agent-design/prompt-engineering.md) | 每个 Agent 的 Prompt 设计思路、防幻觉机制、已知局限 |
+| [🔄 工作流与用户旅程](docs/workflow/agent-orchestration.md) | 完整 Mermaid 流程图、错误处理、演示/真实链路对比 |
+| [🧪 评测 Harness 设计](docs/evaluation/harness-design.md) | 测试集设计、12 个评测指标、Badcase 分析框架 |
+| [📊 评测报告](output/evaluation/evaluation-report.md) | 30 条案例离线评测结果（含稳定性复测和公平性测试） |
+
+---
 
 ## 数据与隐私边界
 
-- 简历原始文件仅用于服务端即时提取，不写入项目数据库。
-- 发送模型前自动替换手机号、邮箱、身份证号和明确标注的姓名。
-- 项目数据库保存岗位结构、脱敏后的简历文本、面试回答和生成报告。
-- 当前作品集版本没有用户登录、字段级查看权限、审计审批或数据库加密，不能作为企业生产合规方案。
-- 正式企业落地应通过内部 API 网关或私有模型，并补充身份认证、RBAC、审计日志、数据保留周期和静态加密。
+- 简历原始文件仅在服务端即时提取，不写入数据库
+- 发送模型前自动替换手机号、邮箱、身份证号和标注姓名
+- v1 无用户登录、RBAC、审计日志和数据库加密，不能作为企业生产合规方案
 
-## 当前能力
-
-- 内置 AI 产品经理岗位与三位虚构候选人。
-- 可编辑岗位评分权重，并要求权重合计为 100%。
-- 候选人排序、分项评分与简历证据映射。
-- 针对候选人差距生成的结构化面试问题。
-- 明确标识的候选人模拟回答与回答评价。
-- 可追溯的面试报告和 Agent 执行记录。
-- 真实 JD 结构化接口 `POST /api/agent/analyze-job`。
-- PDF/TXT 简历提取与解析接口 `POST /api/agent/parse-resume`。
-- 证据匹配接口 `POST /api/agent/match`，总分由应用程序计算。
-- 服务端演示工作流接口 `POST /api/demo-run`。
-
-## 设计边界
-
-系统同时提供真实模型链路与可复现演示数据。当前真实链路支持单岗位、单候选人的 JD 解析、PDF/TXT 简历解析和证据匹配；多候选人持久化与完整面试编排将在下一迭代接入。系统不会自动录用或淘汰候选人。
+---
 
 ## 验证
 
 ```bash
-npm run typecheck
-npm run lint
-npm test
-npm run build
+npm run typecheck   # TypeScript 类型检查
+npm run lint        # ESLint
+npm test            # 单元测试（Vitest）
+npm run build       # 构建验证
+
+npm run eval        # 离线评测（需 API Key，约 15 分钟）
+npm run eval:report # 重新生成评测报告（基于已有结果）
 ```
+
+---
+
+## 当前能力与设计边界
+
+v1 支持单岗位单候选人的完整链路（JD 解析 → 简历解析 → 证据匹配 → 面试设计 → 面试报告）。
+多候选人批次持久化、HR 权限管理、ATS 对接将在 v2 接入。
+系统不会自动录用或淘汰候选人。
